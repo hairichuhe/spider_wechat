@@ -9,6 +9,7 @@ import (
 	"github.com/chanxuehong/wechat/mp/menu"
 	"github.com/chanxuehong/wechat/mp/message/callback/request"
 	"github.com/chanxuehong/wechat/mp/message/callback/response"
+	"github.com/chanxuehong/wechat/mp/user"
 	"github.com/robfig/cron"
 )
 
@@ -23,8 +24,10 @@ const (
 
 var (
 	// 下面两个变量不一定非要作为全局变量, 根据自己的场景来选择.
-	msgHandler core.Handler
-	msgServer  *core.Server
+	msgHandler        core.Handler
+	msgServer         *core.Server
+	accessTokenServer core.AccessTokenServer = core.NewDefaultAccessTokenServer(wxAppId, wxAppSecret, nil)
+	wechatClient      *core.Client           = core.NewClient(accessTokenServer, nil)
 )
 
 func init() {
@@ -69,6 +72,13 @@ func subscribeEventHandler(ctx *core.Context) {
 	event := request.GetSubscribeEvent(ctx.MixedMsg)
 	resp := response.NewText(event.FromUserName, event.ToUserName, event.CreateTime, "欢迎关注！")
 	ctx.RawResponse(resp) // 明文回复
+
+	//获取用户信息
+	userinfo, err := user.Get(wechatClient, event.FromUserName, "zh_CN")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(userinfo)
 }
 
 func defaultEventHandler(ctx *core.Context) {
